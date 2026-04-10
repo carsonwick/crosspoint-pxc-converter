@@ -1063,9 +1063,9 @@ function convert() {
         const t = BAYER4[y & 3][x & 3] / 16;  // 0..0.9375
         // Find the bracket this value falls in and use Bayer to round up or down
         let lo = 0;
-        for (let k = 2; k >= 0; k--) { if (v >= GRAY_REF[k]) { lo = k; break; } }
+        for (let k = 2; k >= 0; k--) { if (v >= GRAY_DISP[k]) { lo = k; break; } }
         const hi = Math.min(lo + 1, 3);
-        const frac = lo === hi ? 1 : (v - GRAY_REF[lo]) / (GRAY_REF[hi] - GRAY_REF[lo]);
+        const frac = lo === hi ? 1 : (v - GRAY_DISP[lo]) / (GRAY_DISP[hi] - GRAY_DISP[lo]);
         q[i] = frac > t ? hi : lo;
       }
     }
