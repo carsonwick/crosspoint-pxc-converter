@@ -1030,7 +1030,7 @@ function convert() {
   for (let i = 0; i < TARGET_W * TARGET_H; i++)
     buf[i] = lum(px[i*4], px[i*4+1], px[i*4+2]);
 
-  // Contrast adjustment in linear space — pivot at midpoint 127.5
+  // Contrast adjustment in sRGB space — pivot at midpoint 127.5
   if (contrastValue !== 0) {
     const factor = contrastValue >= 0 ? 1 + contrastValue * 2 / 100 : 1 + contrastValue / 100;
     for (let i = 0; i < TARGET_W * TARGET_H; i++)
