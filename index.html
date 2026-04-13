@@ -62,7 +62,7 @@
       width: 100%;
       max-width: 1180px;
       display: grid;
-      grid-template-columns: 1fr 190px 320px;
+      grid-template-columns: 1fr 360px 320px;
       gap: 12px;
       align-items: start;
     }
@@ -460,6 +460,28 @@
       text-align: center;
     }
 
+    /* ── Mirror buttons ─────────────────────────────── */
+    .mirror-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .mirror-btn {
+      flex: 1;
+      height: 32px;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: border-color 0.1s, background 0.1s, color 0.1s;
+    }
+    .mirror-btn:hover { border-color: #444; background: #1f1f25; }
+    .mirror-btn.active { border-color: var(--accent-dim); color: var(--accent); }
+
     /* ── Contrast slider ────────────────────────────── */
     .contrast-row {
       display: flex;
@@ -517,8 +539,22 @@
     }
     .contrast-reset:hover { color: var(--text); border-color: var(--muted); }
 
+    /* ── Settings two-column panel ──────────────────── */
+    .settings-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+    .settings-col {
+      display: flex;
+      flex-direction: column;
+    }
+    .settings-col + .settings-col {
+      border-left: 1px solid var(--border);
+    }
+
     /* ── Responsive ─────────────────────────────────── */
-    @media (max-width: 720px) {
+    @media (max-width: 860px) {
       .app { grid-template-columns: 1fr 1fr; }
       .left { grid-column: 1 / -1; }
     }
@@ -565,85 +601,105 @@
 
   <!-- ── Controls panel ───────────────────────────── -->
   <div class="side-panel">
+    <div class="settings-cols">
 
-    <div class="panel-section">
-      <p class="panel-heading">XTeink</p>
-      <div class="pill-group">
-        <button class="pill" id="x3Btn" data-xt="x3">X3</button>
-        <button class="pill active" id="x4Btn" data-xt="x4">X4</button>
+      <!-- Left column: image handling -->
+      <div class="settings-col">
+
+        <div class="panel-section">
+          <p class="panel-heading">XTeink</p>
+          <div class="pill-group">
+            <button class="pill" id="x3Btn" data-xt="x3">X3</button>
+            <button class="pill active" id="x4Btn" data-xt="x4">X4</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <p class="panel-heading">Scale</p>
+          <div class="pill-group">
+            <button class="pill" id="fitBtn" data-mode="fit">Fit</button>
+            <button class="pill active" id="cropBtn" data-mode="crop">Crop</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <p class="panel-heading">Rotation</p>
+          <div class="rotate-group">
+            <button class="rotate-btn" id="rotateCCW" title="Rotate 90° counter-clockwise">↺</button>
+            <span class="rotate-val" id="rotateVal">0°</span>
+            <button class="rotate-btn" id="rotateCW" title="Rotate 90° clockwise">↻</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <p class="panel-heading">Mirror</p>
+          <div class="mirror-group">
+            <button class="mirror-btn" id="mirrorHBtn" title="Flip horizontal">⇆ Horizontal</button>
+            <button class="mirror-btn" id="mirrorVBtn" title="Flip vertical">⇅ Vertical</button>
+          </div>
+        </div>
+
+        <div class="panel-section disabled" id="posSection">
+          <p class="panel-heading">Position on screen</p>
+          <div class="pos-grid">
+            <button class="pos-btn" data-pos="tl" title="Top left"></button>
+            <button class="pos-btn" data-pos="tc" title="Top centre"></button>
+            <button class="pos-btn" data-pos="tr" title="Top right"></button>
+            <button class="pos-btn" data-pos="ml" title="Middle left"></button>
+            <button class="pos-btn active" data-pos="mc" title="Centre"></button>
+            <button class="pos-btn" data-pos="mr" title="Middle right"></button>
+            <button class="pos-btn" data-pos="bl" title="Bottom left"></button>
+            <button class="pos-btn" data-pos="bc" title="Bottom centre"></button>
+            <button class="pos-btn" data-pos="br" title="Bottom right"></button>
+          </div>
+        </div>
+
       </div>
+
+      <!-- Right column: pixel processing -->
+      <div class="settings-col">
+
+        <div class="panel-section">
+          <div class="toggle-row" style="margin-bottom: 10px;">
+            <span class="toggle-label">Dither</span>
+            <label class="toggle">
+              <input type="checkbox" id="ditherToggle" checked>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div id="ditherAlgos" class="pill-group pill-group--wrap">
+            <button class="pill active" data-dither="fs">Floyd-S</button>
+            <button class="pill" data-dither="atk">Atkinson</button>
+            <button class="pill" data-dither="jjn">Jarvis</button>
+            <button class="pill" data-dither="stucki">Stucki</button>
+            <button class="pill" data-dither="burkes">Burkes</button>
+            <button class="pill" data-dither="bayer">Bayer</button>
+            <button class="pill" data-dither="zhou-fang">Zhou-Fang</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <p class="panel-heading">Contrast</p>
+          <div class="contrast-row">
+            <input type="range" id="contrastSlider" class="contrast-slider" min="-100" max="100" value="0" step="1">
+            <span class="contrast-val" id="contrastVal">0</span>
+          </div>
+          <button class="contrast-reset" id="contrastReset">Reset</button>
+        </div>
+
+        <div class="panel-section">
+          <div class="toggle-row">
+            <span class="toggle-label">Invert</span>
+            <label class="toggle">
+              <input type="checkbox" id="invertToggle">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
     </div>
-
-    <div class="panel-section">
-      <p class="panel-heading">Scale</p>
-      <div class="pill-group">
-        <button class="pill" id="fitBtn" data-mode="fit">Fit</button>
-        <button class="pill active" id="cropBtn" data-mode="crop">Crop</button>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <p class="panel-heading">Rotation</p>
-      <div class="rotate-group">
-        <button class="rotate-btn" id="rotateCCW" title="Rotate 90° counter-clockwise">↺</button>
-        <span class="rotate-val" id="rotateVal">0°</span>
-        <button class="rotate-btn" id="rotateCW" title="Rotate 90° clockwise">↻</button>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <div class="toggle-row" style="margin-bottom: 10px;">
-        <span class="toggle-label">Dither</span>
-        <label class="toggle">
-          <input type="checkbox" id="ditherToggle" checked>
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-      <div id="ditherAlgos" class="pill-group pill-group--wrap">
-        <button class="pill active" data-dither="fs">Floyd-S</button>
-        <button class="pill" data-dither="atk">Atkinson</button>
-        <button class="pill" data-dither="jjn">Jarvis</button>
-        <button class="pill" data-dither="stucki">Stucki</button>
-        <button class="pill" data-dither="burkes">Burkes</button>
-        <button class="pill" data-dither="bayer">Bayer</button>
-        <button class="pill" data-dither="zhou-fang">Zhou-Fang</button>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <p class="panel-heading">Contrast</p>
-      <div class="contrast-row">
-        <input type="range" id="contrastSlider" class="contrast-slider" min="-100" max="100" value="0" step="1">
-        <span class="contrast-val" id="contrastVal">0</span>
-      </div>
-      <button class="contrast-reset" id="contrastReset">Reset</button>
-    </div>
-
-    <div class="panel-section">
-      <div class="toggle-row">
-        <span class="toggle-label">Invert</span>
-        <label class="toggle">
-          <input type="checkbox" id="invertToggle">
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-    </div>
-
-    <div class="panel-section disabled" id="posSection">
-      <p class="panel-heading">Position on screen</p>
-      <div class="pos-grid">
-        <button class="pos-btn" data-pos="tl" title="Top left"></button>
-        <button class="pos-btn" data-pos="tc" title="Top centre"></button>
-        <button class="pos-btn" data-pos="tr" title="Top right"></button>
-        <button class="pos-btn" data-pos="ml" title="Middle left"></button>
-        <button class="pos-btn active" data-pos="mc" title="Centre"></button>
-        <button class="pos-btn" data-pos="mr" title="Middle right"></button>
-        <button class="pos-btn" data-pos="bl" title="Bottom left"></button>
-        <button class="pos-btn" data-pos="bc" title="Bottom centre"></button>
-        <button class="pos-btn" data-pos="br" title="Bottom right"></button>
-      </div>
-    </div>
-
   </div>
 
   <!-- ── Preview panel ─────────────────────────────── -->
@@ -651,7 +707,6 @@
 
     <div class="panel-section" style="padding-bottom: 12px;">
       <p class="panel-heading">Preview</p>
-      <!-- internal dims set by XTeink selection, CSS aspect-ratio updated via JS -->
       <canvas id="previewCanvas" width="480" height="800"></canvas>
     </div>
 
@@ -667,6 +722,7 @@
 <footer>
   Place on SD card as <code>/sleep.pxc</code> | <code>/sleep.bmp</code> or inside <code>/.sleep/</code>
 </footer>
+
 
 <canvas id="workCanvas" width="480" height="800" style="display:none"></canvas>
 <div id="zoomBox">
@@ -698,6 +754,8 @@ let invert        = false;
 let ditherEnabled = true;   // when false, pixels are quantized directly with no error diffusion
 let ditherMode    = 'fs';   // 'fs' = Floyd-Steinberg, 'atk' = Atkinson
 let rotation      = 0;      // 0, 90, 180, 270
+let mirrorH       = false;
+let mirrorV       = false;
 
 let displayScale = 1;
 let workScale    = 1;
@@ -726,6 +784,8 @@ const contrastReset   = document.getElementById('contrastReset');
 const rotateCWBtn     = document.getElementById('rotateCW');
 const rotateCCWBtn    = document.getElementById('rotateCCW');
 const rotateValEl     = document.getElementById('rotateVal');
+const mirrorHBtn      = document.getElementById('mirrorHBtn');
+const mirrorVBtn      = document.getElementById('mirrorVBtn');
 const invertToggle    = document.getElementById('invertToggle');
 const ditherToggle    = document.getElementById('ditherToggle');
 const ditherAlgos     = document.getElementById('ditherAlgos');
@@ -758,7 +818,19 @@ function applyRotation(deg) {
   if (loadedImg) { buildRotatedSrc(); resetEditor(); }
 }
 
-// Build an offscreen canvas with the image rotated by `rotation` degrees.
+// Mirror
+mirrorHBtn.addEventListener('click', () => {
+  mirrorH = !mirrorH;
+  mirrorHBtn.classList.toggle('active', mirrorH);
+  if (loadedImg) { buildRotatedSrc(); resetEditor(); }
+});
+mirrorVBtn.addEventListener('click', () => {
+  mirrorV = !mirrorV;
+  mirrorVBtn.classList.toggle('active', mirrorV);
+  if (loadedImg) { buildRotatedSrc(); resetEditor(); }
+});
+
+// Build an offscreen canvas with rotation and mirror applied.
 // Width/height swap on 90°/270° so the output always has the rotated dimensions.
 function buildRotatedSrc() {
   const sw = loadedImg.naturalWidth, sh = loadedImg.naturalHeight;
@@ -771,12 +843,17 @@ function buildRotatedSrc() {
   tc.save();
   tc.translate(rw / 2, rh / 2);
   tc.rotate(rotation * Math.PI / 180);
+  if (mirrorH) tc.scale(-1,  1);
+  if (mirrorV) tc.scale( 1, -1);
   tc.drawImage(loadedImg, -sw / 2, -sh / 2);
   tc.restore();
 }
 
-// Returns the effective source image/canvas after rotation.
-function getSource() { return rotation === 0 ? loadedImg : rotatedSrc; }
+// Returns the effective source image/canvas after rotation/mirror.
+function getSource() {
+  if (rotation === 0 && !mirrorH && !mirrorV) return loadedImg;
+  return rotatedSrc;
+}
 function srcW(s)      { return s.naturalWidth  ?? s.width; }
 function srcH(s)      { return s.naturalHeight ?? s.height; }
 
@@ -817,6 +894,8 @@ function unloadImage() {
   // Reset state
   outputBaseName = 'sleep';
   rotation = 0; rotatedSrc = null; rotateValEl.textContent = '0°';
+  mirrorH = false; mirrorHBtn.classList.remove('active');
+  mirrorV = false; mirrorVBtn.classList.remove('active');
   invert = false; invertToggle.checked = false;
   ditherEnabled = true; ditherToggle.checked = true; ditherAlgos.classList.remove('disabled');
   contrastValue = 0;
@@ -1377,6 +1456,12 @@ downloadPxcBtn.addEventListener('click', () => {
 downloadBmpBtn.addEventListener('click', () => {
   if (bmpBytes) triggerDownload(bmpBytes, outputBaseName + '.bmp', 'image/bmp');
 });
+
+const modalBackdrop = document.getElementById('modalBackdrop');
+document.getElementById('settingsBtn').addEventListener('click', () => modalBackdrop.classList.add('open'));
+document.getElementById('modalClose').addEventListener('click', () => modalBackdrop.classList.remove('open'));
+modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) modalBackdrop.classList.remove('open'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') modalBackdrop.classList.remove('open'); });
 </script>
 </body>
 </html>
