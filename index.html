@@ -1028,6 +1028,7 @@ let blackPoint    = 0;
 let whitePoint    = 255;
 let gammaValue    = 1.0;  // 1.0 = no adjustment; > 1 lifts shadows, < 1 compresses them
 let gammaLUT      = null; // Float32Array(256), rebuilt whenever gammaValue changes
+let preGammaHistogram = null; // histogram after B/W point but before gamma — used by autoGamma
 let invert        = false;
 let ditherEnabled = true;   // when false, pixels are quantized directly with no error diffusion
 let ditherMode    = 'fs';   // 'fs' = Floyd-Steinberg, 'atk' = Atkinson
@@ -1245,18 +1246,21 @@ function rebuildGammaLUT() {
 }
 
 function autoGamma() {
-  if (!lastHistogram) return;
-  // Find median luminance value from histogram
+  if (!preGammaHistogram) return;
+  // Find median from the B/W-point-adjusted but pre-gamma distribution
+  // Using preGammaHistogram makes this stable and idempotent regardless of current gamma
   const total = TARGET_W * TARGET_H;
   const half  = total / 2;
   let cumul = 0, median = 127;
   for (let i = 0; i < 256; i++) {
-    cumul += lastHistogram[i];
+    cumul += preGammaHistogram[i];
     if (cumul >= half) { median = i; break; }
   }
   if (median <= 0 || median >= 127) return;
-  // gamma that maps median → 127.5 (neutral midpoint); only lift, never crush
-  gammaValue = Math.log(median / 255) / Math.log(0.5);
+  // Map median to 127 — the centre of the dark-grey/light-grey boundary,
+  // which aligns with the e-ink palette quantisation midpoint (85…170 zone).
+  // Only lift (gamma ≥ 1) to avoid crushing blacks.
+  gammaValue = Math.log(median / 255) / Math.log(127 / 255);
   gammaValue = Math.max(1.0, Math.min(3.0, gammaValue));
   gammaSlider.value = Math.round(gammaValue * 100);
   gammaValEl.textContent = gammaValue.toFixed(2);
@@ -1679,10 +1683,15 @@ function autoLevels() {
 
   blackPoint = lo;
   whitePoint = hi;
+  // Reset gamma so B/W points are calibrated on the clean unmodified range
+  gammaValue = 1.0;
   blackSlider.value = lo;
   whiteSlider.value = hi;
   blackValEl.textContent = lo;
   whiteValEl.textContent = hi;
+  gammaSlider.value = '100';
+  gammaValEl.textContent = '1.00';
+  rebuildGammaLUT();
   scheduleConvert(0);
 }
 
@@ -1836,6 +1845,11 @@ function convert() {
         buf[i] = Math.max(0, Math.min(255, (buf[i] - blackPoint) / range * 255));
     }
   }
+
+  // Snapshot distribution after B/W point, before gamma — used by autoGamma
+  preGammaHistogram = new Float32Array(256);
+  for (let i = 0; i < TARGET_W * TARGET_H; i++)
+    preGammaHistogram[Math.min(255, Math.max(0, Math.round(buf[i])))]++;
 
   // Gamma adjustment — Vout = Vin^(1/gamma)
   // gamma > 1: lifts shadows (brighter); gamma < 1: compresses shadows (darker)
