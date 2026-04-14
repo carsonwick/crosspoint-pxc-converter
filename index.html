@@ -927,7 +927,6 @@
           </div>
           <div class="tone-btns">
             <button class="tone-btn" id="autoLevelsBtn">Auto</button>
-            <button class="tone-btn" id="autoGammaBtn">Auto γ</button>
             <button class="tone-btn" id="toneReset">Reset all</button>
           </div>
         </div>
@@ -1028,7 +1027,6 @@ let blackPoint    = 0;
 let whitePoint    = 255;
 let gammaValue    = 1.0;  // 1.0 = no adjustment; > 1 lifts shadows, < 1 compresses them
 let gammaLUT      = null; // Float32Array(256), rebuilt whenever gammaValue changes
-let preGammaHistogram = null; // histogram after B/W point but before gamma — used by autoGamma
 let invert        = false;
 let ditherEnabled = true;   // when false, pixels are quantized directly with no error diffusion
 let ditherMode    = 'fs';   // 'fs' = Floyd-Steinberg, 'atk' = Atkinson
@@ -1245,30 +1243,6 @@ function rebuildGammaLUT() {
     gammaLUT[i] = Math.pow(i / 255, 1 / g) * 255;
 }
 
-function autoGamma() {
-  if (!preGammaHistogram) return;
-  // Find median from the B/W-point-adjusted but pre-gamma distribution
-  // Using preGammaHistogram makes this stable and idempotent regardless of current gamma
-  const total = TARGET_W * TARGET_H;
-  const half  = total / 2;
-  let cumul = 0, median = 127;
-  for (let i = 0; i < 256; i++) {
-    cumul += preGammaHistogram[i];
-    if (cumul >= half) { median = i; break; }
-  }
-  if (median <= 0 || median >= 100) return;
-  // Map median to 100 — conservative target between dark-grey (85) and the
-  // quantisation midpoint (127). Lifts genuinely dark images without
-  // over-brightening ones that are already in a reasonable range.
-  // Only applies when median < 100; gamma is always ≥ 1 (never crushes blacks).
-  gammaValue = Math.log(median / 255) / Math.log(100 / 255);
-  gammaValue = Math.max(1.0, Math.min(3.0, gammaValue));
-  gammaSlider.value = Math.round(gammaValue * 100);
-  gammaValEl.textContent = gammaValue.toFixed(2);
-  rebuildGammaLUT();
-  scheduleConvert(0);
-}
-
 gammaSlider.addEventListener('input', () => {
   gammaValue = parseInt(gammaSlider.value) / 100;
   if (gammaValue < 0.01) gammaValue = 0.01;
@@ -1277,7 +1251,6 @@ gammaSlider.addEventListener('input', () => {
   scheduleConvert(50);
 });
 
-document.getElementById('autoGammaBtn').addEventListener('click', autoGamma);
 
 // Change / unload image
 changeBtn.addEventListener('click', unloadImage);
@@ -1846,11 +1819,6 @@ function convert() {
         buf[i] = Math.max(0, Math.min(255, (buf[i] - blackPoint) / range * 255));
     }
   }
-
-  // Snapshot distribution after B/W point, before gamma — used by autoGamma
-  preGammaHistogram = new Float32Array(256);
-  for (let i = 0; i < TARGET_W * TARGET_H; i++)
-    preGammaHistogram[Math.min(255, Math.max(0, Math.round(buf[i])))]++;
 
   // Gamma adjustment — Vout = Vin^(1/gamma)
   // gamma > 1: lifts shadows (brighter); gamma < 1: compresses shadows (darker)
