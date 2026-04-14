@@ -1254,10 +1254,10 @@ function autoGamma() {
     cumul += lastHistogram[i];
     if (cumul >= half) { median = i; break; }
   }
-  if (median <= 0 || median >= 255) return;
-  // gamma that maps median → 127.5 (neutral midpoint)
+  if (median <= 0 || median >= 127) return;
+  // gamma that maps median → 127.5 (neutral midpoint); only lift, never crush
   gammaValue = Math.log(median / 255) / Math.log(0.5);
-  gammaValue = Math.max(0.3, Math.min(3.0, gammaValue));
+  gammaValue = Math.max(1.0, Math.min(3.0, gammaValue));
   gammaSlider.value = Math.round(gammaValue * 100);
   gammaValEl.textContent = gammaValue.toFixed(2);
   rebuildGammaLUT();
