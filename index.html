@@ -139,13 +139,46 @@
     }
     .change-btn:hover { color: var(--text); border-color: var(--muted); }
 
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+    }
+    .zoom-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      width: 20px;
+      height: 20px;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.1s, border-color 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .zoom-btn:hover { color: var(--text); border-color: var(--muted); }
+    .zoom-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      min-width: 28px;
+      text-align: center;
+    }
+
     .source-frame {
       position: relative;
-      overflow: hidden;
+      overflow: auto;
       border: 1px solid var(--border);
       border-radius: 8px;
       display: inline-block;
+      scrollbar-width: none;
     }
+    .source-frame::-webkit-scrollbar { display: none; }
 
     #sourceCanvas { display: block; }
 
@@ -195,9 +228,20 @@
 
     .panel-section {
       padding: 16px;
-      border-bottom: 1px solid var(--border);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    .panel-section:last-child { border-bottom: none; }
+    .panel-section:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 12px;
+      right: 12px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border2) 25%, var(--border2) 75%, transparent);
+    }
 
     .panel-heading {
       font-size: 0.65rem;
@@ -208,8 +252,6 @@
       margin-bottom: 10px;
       text-align: center;
     }
-
-    .panel-section { display: flex; flex-direction: column; align-items: center; }
 
     /* ── Scale pills ────────────────────────────────── */
     .pill-group {
@@ -307,6 +349,17 @@
       border: 1px solid var(--border);
       image-rendering: auto;
       cursor: crosshair;
+    }
+
+    /* ── Histogram ──────────────────────────────────── */
+    #histogramCanvas {
+      display: block;
+      width: 100%;
+      height: 96px;
+      margin-top: 8px;
+      border-radius: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
     }
 
     /* ── Zoom loupe ──────────────────────────────────── */
@@ -540,6 +593,67 @@
     }
     .contrast-reset:hover { color: var(--text); border-color: var(--muted); }
 
+    /* ── Tone Range sliders ──────────────────────────── */
+    .tone-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 6px;
+    }
+    .tone-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      min-width: 38px;
+    }
+    .tone-slider {
+      flex: 1;
+      min-width: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border2);
+      outline: none;
+      cursor: pointer;
+    }
+    .tone-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+    }
+    .tone-slider::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+    }
+    .tone-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      min-width: 30px;
+      text-align: right;
+    }
+    .tone-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.65rem;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      cursor: pointer;
+      transition: color 0.1s, border-color 0.1s;
+    }
+    .tone-btn:hover { color: var(--text); border-color: var(--muted); }
+    .tone-btns { display: flex; gap: 6px; margin-top: 4px; }
+
     /* ── Settings two-column panel ──────────────────── */
     .settings-cols {
       display: grid;
@@ -586,7 +700,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3"/>
       </svg>
-      Drop image here or click to browse
+      Drop image here, click to browse, or paste (Ctrl+V)
       <small>PNG, JPG, WebP, BMP, GIF</small>
       <input type="file" id="fileInput" accept="image/*">
     </div>
@@ -594,6 +708,11 @@
     <div class="editor-section" id="editorSection">
       <div class="source-header">
         <p class="section-label" id="sourceLabel">Source — drag to reposition</p>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOutBtn">−</button>
+          <span class="zoom-label" id="zoomLabel">1×</span>
+          <button class="zoom-btn" id="zoomInBtn">+</button>
+        </div>
         <button class="change-btn" id="changeBtn">Clear</button>
       </div>
       <div class="source-frame" id="sourceFrame">
@@ -610,7 +729,7 @@
   <div class="side-panel">
     <div class="settings-cols">
 
-      <!-- Left column: image handling -->
+      <!-- Left column: geometry / layout -->
       <div class="settings-col">
 
         <div class="panel-section">
@@ -626,6 +745,26 @@
           <div class="pill-group">
             <button class="pill" id="fitBtn" data-mode="fit">Fit</button>
             <button class="pill active" id="cropBtn" data-mode="crop">Crop</button>
+          </div>
+        </div>
+
+        <div class="panel-section disabled" id="posSection">
+          <p class="panel-heading">Position on screen</p>
+          <div class="pos-grid">
+            <button class="pos-btn" data-pos="tl" title="Top left"></button>
+            <button class="pos-btn" data-pos="tc" title="Top centre"></button>
+            <button class="pos-btn" data-pos="tr" title="Top right"></button>
+            <button class="pos-btn" data-pos="ml" title="Middle left"></button>
+            <button class="pos-btn active" data-pos="mc" title="Centre"></button>
+            <button class="pos-btn" data-pos="mr" title="Middle right"></button>
+            <button class="pos-btn" data-pos="bl" title="Bottom left"></button>
+            <button class="pos-btn" data-pos="bc" title="Bottom centre"></button>
+            <button class="pos-btn" data-pos="br" title="Bottom right"></button>
+          </div>
+          <p class="panel-heading" style="margin-top: 10px;">Background</p>
+          <div class="pill-group">
+            <button class="pill active" data-bg="white">White</button>
+            <button class="pill" data-bg="black">Black</button>
           </div>
         </div>
 
@@ -646,42 +785,31 @@
           </div>
         </div>
 
-        <div class="panel-section disabled" id="posSection">
-          <p class="panel-heading">Position on screen</p>
-          <div class="pos-grid">
-            <button class="pos-btn" data-pos="tl" title="Top left"></button>
-            <button class="pos-btn" data-pos="tc" title="Top centre"></button>
-            <button class="pos-btn" data-pos="tr" title="Top right"></button>
-            <button class="pos-btn" data-pos="ml" title="Middle left"></button>
-            <button class="pos-btn active" data-pos="mc" title="Centre"></button>
-            <button class="pos-btn" data-pos="mr" title="Middle right"></button>
-            <button class="pos-btn" data-pos="bl" title="Bottom left"></button>
-            <button class="pos-btn" data-pos="bc" title="Bottom centre"></button>
-            <button class="pos-btn" data-pos="br" title="Bottom right"></button>
-          </div>
-        </div>
-
       </div>
 
-      <!-- Right column: pixel processing -->
+      <!-- Right column: tone pipeline -->
       <div class="settings-col">
 
         <div class="panel-section">
-          <div class="toggle-row" style="margin-bottom: 10px;">
-            <span class="toggle-label">Dither</span>
-            <label class="toggle">
-              <input type="checkbox" id="ditherToggle" checked>
-              <span class="toggle-track"></span>
-            </label>
+          <p class="panel-heading">Histogram</p>
+          <canvas id="histogramCanvas"></canvas>
+        </div>
+
+        <div class="panel-section">
+          <p class="panel-heading">Tone Range</p>
+          <div class="tone-row">
+            <span class="tone-label">Black</span>
+            <input type="range" id="blackSlider" class="tone-slider" min="0" max="255" value="0" step="1">
+            <span class="tone-val" id="blackVal">0</span>
           </div>
-          <div id="ditherAlgos" class="pill-group pill-group--wrap">
-            <button class="pill active" data-dither="fs">Floyd-S</button>
-            <button class="pill" data-dither="atk">Atkinson</button>
-            <button class="pill" data-dither="jjn">Jarvis</button>
-            <button class="pill" data-dither="stucki">Stucki</button>
-            <button class="pill" data-dither="burkes">Burkes</button>
-            <button class="pill" data-dither="bayer">Bayer</button>
-            <button class="pill" data-dither="zhou-fang">Zhou-Fang</button>
+          <div class="tone-row">
+            <span class="tone-label">White</span>
+            <input type="range" id="whiteSlider" class="tone-slider" min="0" max="255" value="255" step="1">
+            <span class="tone-val" id="whiteVal">255</span>
+          </div>
+          <div class="tone-btns">
+            <button class="tone-btn" id="autoLevelsBtn">Auto</button>
+            <button class="tone-btn" id="toneReset">Reset</button>
           </div>
         </div>
 
@@ -701,6 +829,25 @@
               <input type="checkbox" id="invertToggle">
               <span class="toggle-track"></span>
             </label>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="toggle-row" style="margin-bottom: 10px;">
+            <span class="toggle-label">Dither</span>
+            <label class="toggle">
+              <input type="checkbox" id="ditherToggle" checked>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div id="ditherAlgos" class="pill-group pill-group--wrap">
+            <button class="pill active" data-dither="fs">Floyd-S</button>
+            <button class="pill" data-dither="atk">Atkinson</button>
+            <button class="pill" data-dither="jjn">Jarvis</button>
+            <button class="pill" data-dither="stucki">Stucki</button>
+            <button class="pill" data-dither="burkes">Burkes</button>
+            <button class="pill" data-dither="bayer">Bayer</button>
+            <button class="pill" data-dither="zhou-fang">Zhou-Fang</button>
           </div>
         </div>
 
@@ -756,7 +903,10 @@ let bmpBytes      = null;   // Uint8Array — bmp file bytes
 let outputBaseName = 'sleep';
 let mode          = 'crop';
 let fitAlign      = 'mc';
+let fitBg         = 'white';
 let contrastValue = 0;
+let blackPoint    = 0;
+let whitePoint    = 255;
 let invert        = false;
 let ditherEnabled = true;   // when false, pixels are quantized directly with no error diffusion
 let ditherMode    = 'fs';   // 'fs' = Floyd-Steinberg, 'atk' = Atkinson
@@ -768,6 +918,11 @@ let displayScale = 1;
 let workScale    = 1;
 let dispImgW = 0, dispImgH = 0;
 let boxW = 0, boxH = 0, boxX = 0, boxY = 0;
+
+let editorZoom    = 1.0;
+const ZOOM_STEPS  = [0.5, 0.75, 1, 1.5, 2, 3, 4];
+
+let lastHistogram = null;
 
 let isDragging = false;
 let dragStartX = 0, dragStartY = 0, dragStartBX = 0, dragStartBY = 0;
@@ -788,6 +943,11 @@ const posSection      = document.getElementById('posSection');
 const contrastSlider  = document.getElementById('contrastSlider');
 const contrastValEl   = document.getElementById('contrastVal');
 const contrastReset   = document.getElementById('contrastReset');
+const blackSlider     = document.getElementById('blackSlider');
+const blackValEl      = document.getElementById('blackVal');
+const whiteSlider     = document.getElementById('whiteSlider');
+const whiteValEl      = document.getElementById('whiteVal');
+const toneReset       = document.getElementById('toneReset');
 const rotateCWBtn     = document.getElementById('rotateCW');
 const rotateCCWBtn    = document.getElementById('rotateCCW');
 const rotateValEl     = document.getElementById('rotateVal');
@@ -877,8 +1037,53 @@ contrastReset.addEventListener('click', () => {
   scheduleConvert(0);
 });
 
+// Tone Range sliders
+blackSlider.addEventListener('input', () => {
+  blackPoint = parseInt(blackSlider.value);
+  if (blackPoint >= whitePoint) blackPoint = whitePoint - 1;
+  blackSlider.value = blackPoint;
+  blackValEl.textContent = blackPoint;
+  scheduleConvert(50);
+});
+
+whiteSlider.addEventListener('input', () => {
+  whitePoint = parseInt(whiteSlider.value);
+  if (whitePoint <= blackPoint) whitePoint = blackPoint + 1;
+  whiteSlider.value = whitePoint;
+  whiteValEl.textContent = whitePoint;
+  scheduleConvert(50);
+});
+
+toneReset.addEventListener('click', () => {
+  blackPoint = 0;
+  whitePoint = 255;
+  blackSlider.value = '0';
+  whiteSlider.value = '255';
+  blackValEl.textContent = '0';
+  whiteValEl.textContent = '255';
+  scheduleConvert(0);
+});
+
+document.getElementById('autoLevelsBtn').addEventListener('click', autoLevels);
+
 // Change / unload image
 changeBtn.addEventListener('click', unloadImage);
+
+// Zoom controls
+const zoomLabelEl = document.getElementById('zoomLabel');
+function applyZoom(z) {
+  editorZoom = z;
+  zoomLabelEl.textContent = (z === Math.round(z) ? z : z) + '×';
+  if (loadedImg) resetEditor();
+}
+document.getElementById('zoomInBtn').addEventListener('click', () => {
+  const idx = ZOOM_STEPS.indexOf(editorZoom);
+  if (idx < ZOOM_STEPS.length - 1) applyZoom(ZOOM_STEPS[idx + 1]);
+});
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
+  const idx = ZOOM_STEPS.indexOf(editorZoom);
+  if (idx > 0) applyZoom(ZOOM_STEPS[idx - 1]);
+});
 
 function unloadImage() {
   clearTimeout(convertTimer);
@@ -900,7 +1105,9 @@ function unloadImage() {
 
   // Reset state
   outputBaseName = 'sleep';
-  rotation = 0; rotatedSrc = null; rotateValEl.textContent = '0°';
+  rotation = 0;
+  if (rotatedSrc) { rotatedSrc.width = 1; rotatedSrc.height = 1; rotatedSrc = null; }
+  rotateValEl.textContent = '0°';
   mirrorH = false; mirrorHBtn.classList.remove('active');
   mirrorV = false; mirrorVBtn.classList.remove('active');
   invert = false; invertToggle.checked = false;
@@ -908,7 +1115,22 @@ function unloadImage() {
   contrastValue = 0;
   contrastSlider.value = '0';
   contrastValEl.textContent = '0';
+  blackPoint = 0;
+  whitePoint = 255;
+  document.getElementById('blackSlider').value = '0';
+  document.getElementById('whiteSlider').value = '255';
+  document.getElementById('blackVal').textContent = '0';
+  document.getElementById('whiteVal').textContent = '255';
   clearSnap();
+
+  // Reset zoom
+  editorZoom = 1.0;
+  zoomLabelEl.textContent = '1×';
+
+  // Clear histogram
+  lastHistogram = null;
+  if (histogramCanvas.width)
+    histogramCanvas.getContext('2d').clearRect(0, 0, histogramCanvas.width, histogramCanvas.height);
 
   // Restore UI
   dropZone.style.display = '';
@@ -965,6 +1187,16 @@ document.querySelectorAll('.pos-btn').forEach(btn => {
   });
 });
 
+// Fit background picker
+document.querySelectorAll('[data-bg]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    fitBg = btn.dataset.bg;
+    document.querySelectorAll('[data-bg]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    scheduleConvert(0);
+  });
+});
+
 // Drop / browse
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
@@ -977,6 +1209,7 @@ dropZone.addEventListener('drop', e => {
 fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
 
 function loadFile(file) {
+  if (loadedImg) { loadedImg.src = ''; loadedImg = null; }
   outputBaseName = file.name.replace(/\.[^.]+$/, '');
   const reader = new FileReader();
   reader.onload = e => {
@@ -988,11 +1221,13 @@ function loadFile(file) {
 }
 
 function resetEditor() {
-  if (rotation !== 0) buildRotatedSrc();
+  if (rotation !== 0 || mirrorH || mirrorV) buildRotatedSrc();
   const src = getSource();
   const sw = srcW(src), sh = srcH(src);
 
-  displayScale = Math.min(MAX_EDITOR_W / sw, MAX_EDITOR_H / sh);
+  // Fit image within editor bounds, then apply user zoom
+  const baseScale = Math.min(MAX_EDITOR_W / sw, MAX_EDITOR_H / sh);
+  displayScale = Math.min(baseScale * editorZoom, 1.0);
   dispImgW = Math.round(sw * displayScale);
   dispImgH = Math.round(sh * displayScale);
 
@@ -1008,11 +1243,11 @@ function resetEditor() {
   sourceCanvas.width  = dispImgW;
   sourceCanvas.height = dispImgH;
   sourceCanvas.getContext('2d').drawImage(src, 0, 0, dispImgW, dispImgH);
-  sourceFrame.style.width  = dispImgW + 'px';
-  sourceFrame.style.height = dispImgH + 'px';
+  sourceFrame.style.width  = Math.min(dispImgW, MAX_EDITOR_W) + 'px';
+  sourceFrame.style.height = Math.min(dispImgH, MAX_EDITOR_H) + 'px';
 
   if (mode === 'crop') {
-    sourceLabel.textContent = 'Source — drag to reposition';
+    sourceLabel.textContent = 'Source — drag or click to reposition';
     cropBox.style.display = 'block';
     posSection.classList.add('disabled');
     clearSnap();
@@ -1036,6 +1271,22 @@ function applyCropBox() {
   cropBox.style.top    = boxY + 'px';
   cropBox.style.width  = boxW + 'px';
   cropBox.style.height = boxH + 'px';
+
+  // Auto-scroll to keep crop box visible
+  const margin = 20;
+  const visLeft   = sourceFrame.scrollLeft;
+  const visTop    = sourceFrame.scrollTop;
+  const visRight  = visLeft + sourceFrame.clientWidth;
+  const visBottom = visTop  + sourceFrame.clientHeight;
+
+  let sx = visLeft, sy = visTop;
+  if (boxX < visLeft + margin)              sx = boxX - margin;
+  if (boxX + boxW > visRight - margin)      sx = boxX + boxW - sourceFrame.clientWidth + margin;
+  if (boxY < visTop + margin)               sy = boxY - margin;
+  if (boxY + boxH > visBottom - margin)     sy = boxY + boxH - sourceFrame.clientHeight + margin;
+
+  sourceFrame.scrollLeft = Math.max(0, sx);
+  sourceFrame.scrollTop  = Math.max(0, sy);
 }
 
 function clearSnap() {
@@ -1058,10 +1309,13 @@ function clientXY(e) {
                    : { x: e.clientX, y: e.clientY };
 }
 
+let didDrag = false;
+
 function onDragStart(e) {
   if (mode !== 'crop') return;
   e.preventDefault();
   isDragging = true;
+  didDrag = false;
   const p = clientXY(e);
   dragStartX = p.x; dragStartY = p.y;
   dragStartBX = boxX; dragStartBY = boxY;
@@ -1070,6 +1324,7 @@ function onDragStart(e) {
 function onDragMove(e) {
   if (!isDragging) return;
   e.preventDefault();
+  didDrag = true;
   const p = clientXY(e);
   let rawX = dragStartBX + (p.x - dragStartX);
   let rawY = dragStartBY + (p.y - dragStartY);
@@ -1092,6 +1347,16 @@ function onDragEnd() {
   scheduleConvert(0);
 }
 
+sourceCanvas.addEventListener('click', e => {
+  if (mode !== 'crop') return;
+  if (didDrag) { didDrag = false; return; }
+  const rect = sourceCanvas.getBoundingClientRect();
+  boxX = (e.clientX - rect.left) - boxW / 2;
+  boxY = (e.clientY - rect.top)  - boxH / 2;
+  applyCropBox();
+  scheduleConvert(100);
+});
+
 // Conversion
 function scheduleConvert(delay) {
   clearTimeout(convertTimer);
@@ -1111,6 +1376,154 @@ function quantize(v) {
   return 3;
 }
 
+function autoLevels() {
+  if (!loadedImg) return;
+  const src = getSource();
+  const sw = srcW(src), sh = srcH(src);
+
+  const tmp = document.createElement('canvas');
+  tmp.width = sw; tmp.height = sh;
+  const tc = tmp.getContext('2d');
+  tc.drawImage(src, 0, 0, sw, sh);
+
+  const px = tc.getImageData(0, 0, sw, sh).data;
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < sw * sh; i++)
+    hist[Math.round(lum(px[i*4], px[i*4+1], px[i*4+2]))]++;
+
+  const clip = Math.max(1, Math.round(sw * sh * 0.005));
+  let lo = 0, loCount = 0;
+  while (lo < 255 && (loCount += hist[lo]) < clip) lo++;
+  let hi = 255, hiCount = 0;
+  while (hi > 0 && (hiCount += hist[hi]) < clip) hi--;
+
+  // Ensure minimum range to avoid over-boosting near-uniform images
+  if (hi - lo < 20) {
+    const mid = (lo + hi) / 2;
+    lo = Math.max(0, Math.round(mid - 10));
+    hi = Math.min(255, Math.round(mid + 10));
+  }
+
+  blackPoint = lo;
+  whitePoint = hi;
+  blackSlider.value = lo;
+  whiteSlider.value = hi;
+  blackValEl.textContent = lo;
+  whiteValEl.textContent = hi;
+  scheduleConvert(0);
+}
+
+// ── Histogram ──────────────────────────────────────────────────────────────────
+const histogramCanvas  = document.getElementById('histogramCanvas');
+
+function resizeHistogramCanvas() {
+  const w = histogramCanvas.offsetWidth;
+  if (!w) return;
+  const dpr = window.devicePixelRatio || 1;
+  const targetW = Math.round(w * dpr);
+  const targetH = Math.round(80 * dpr);
+  if (histogramCanvas.width === targetW && histogramCanvas.height === targetH) return;
+  histogramCanvas.width  = targetW;
+  histogramCanvas.height = targetH;
+}
+
+function drawHistogram() {
+  if (!lastHistogram) return;
+  resizeHistogramCanvas();
+  if (!histogramCanvas.width) return;
+
+  const cw  = histogramCanvas.width;
+  const ch  = histogramCanvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const LABEL_H = Math.round(16 * dpr);
+  const PCT_H   = Math.round(18 * dpr);
+  const STRIP_H = Math.round(4  * dpr);   // solid palette colour strip
+  const BAR_H   = ch - LABEL_H - PCT_H - STRIP_H;
+
+  const hc = histogramCanvas.getContext('2d');
+  hc.clearRect(0, 0, cw, ch);
+
+  // Compute per-bucket pixel counts from histogram (thresholds: 42, 127, 212)
+  const total = TARGET_W * TARGET_H;
+  const ZONES = [
+    { lo: 0,   hi: 41,  xLo: 0,   xHi: 42,  fill: 'rgba(0,0,0,0.5)',       pctColor: 'rgba(90,90,100,0.9)',   palette: 'rgb(0,0,0)' },
+    { lo: 42,  hi: 126, xLo: 42,  xHi: 127, fill: 'rgba(85,85,85,0.28)',    pctColor: 'rgba(140,140,152,0.9)', palette: 'rgb(85,85,85)' },
+    { lo: 127, hi: 211, xLo: 127, xHi: 212, fill: 'rgba(170,170,170,0.18)', pctColor: 'rgba(185,185,195,0.9)', palette: 'rgb(170,170,170)' },
+    { lo: 212, hi: 255, xLo: 212, xHi: 255, fill: 'rgba(232,232,234,0.12)', pctColor: 'rgba(255,255,255,1)',   palette: 'rgb(255,255,255)' },
+  ];
+  for (const z of ZONES) {
+    z.count = 0;
+    for (let i = z.lo; i <= z.hi; i++) z.count += lastHistogram[i];
+    z.pct = total ? Math.round(z.count / total * 100) : 0;
+  }
+
+  // Zone backgrounds
+  for (const z of ZONES) {
+    const x1 = (z.xLo / 255) * cw;
+    const x2 = (z.xHi / 255) * cw;
+    hc.fillStyle = z.fill;
+    hc.fillRect(x1, 0, x2 - x1, BAR_H + STRIP_H + PCT_H);
+  }
+
+  // Normalise bars
+  let maxVal = 0;
+  for (let i = 0; i < 256; i++) if (lastHistogram[i] > maxVal) maxVal = lastHistogram[i];
+
+  // Bars — brightness-tinted dark→light
+  if (maxVal > 0) {
+    const barW = cw / 256;
+    for (let i = 0; i < 256; i++) {
+      if (!lastHistogram[i]) continue;
+      const barH = (lastHistogram[i] / maxVal) * BAR_H;
+      const g = Math.round(50 + (i / 255) * 160);
+      hc.fillStyle = `rgb(${g},${g},${g})`;
+      hc.fillRect(i * barW, BAR_H - barH, Math.max(1, barW - 0.3), barH);
+    }
+  }
+
+  // Palette colour strip — solid actual display grey per zone
+  for (const z of ZONES) {
+    const x1 = (z.xLo / 255) * cw;
+    const x2 = (z.xHi / 255) * cw;
+    hc.fillStyle = z.palette;
+    hc.fillRect(x1, BAR_H, x2 - x1, STRIP_H);
+  }
+
+  // Threshold lines at 42, 127, 212
+  hc.strokeStyle = 'rgba(232,232,234,0.25)';
+  hc.lineWidth = 1;
+  for (const t of [42, 127, 212]) {
+    const x = (t / 255) * cw;
+    hc.beginPath(); hc.moveTo(x, 0); hc.lineTo(x, BAR_H + STRIP_H + PCT_H); hc.stroke();
+  }
+
+  // Percentage labels — centered in each zone
+  hc.font = `${Math.round(9 * dpr)}px monospace`;
+  hc.textBaseline = 'middle';
+  hc.textAlign = 'center';
+  const pctY = BAR_H + STRIP_H + PCT_H / 2;
+  for (const z of ZONES) {
+    const x1 = (z.xLo / 255) * cw;
+    const x2 = (z.xHi / 255) * cw;
+    const cx = (x1 + x2) / 2;
+    hc.fillStyle = z.pctColor;
+    hc.fillText(z.pct + '%', cx, pctY);
+  }
+
+  // Threshold value labels at bottom — only the 3 cut points
+  hc.fillStyle = 'rgba(90,90,104,0.9)';
+  hc.font = `${Math.round(9 * dpr)}px monospace`;
+  hc.textBaseline = 'bottom';
+  hc.textAlign = 'center';
+  for (const t of [42, 127, 212])
+    hc.fillText(String(t), (t / 255) * cw, ch - 1);
+}
+
+window.addEventListener('resize', () => {
+  resizeHistogramCanvas();
+  drawHistogram();
+});
+
 function fitOffset(fw, fh) {
   const pos = fitAlign;
   const x = pos[1] === 'l' ? 0 : pos[1] === 'c' ? (TARGET_W - fw) / 2 : TARGET_W - fw;
@@ -1124,7 +1537,7 @@ function convert() {
   const sw   = srcW(src), sh = srcH(src);
   const ctx  = workCanvas.getContext('2d');
 
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = fitBg === 'black' ? '#000000' : '#ffffff';
   ctx.fillRect(0, 0, TARGET_W, TARGET_H);
 
   if (mode === 'fit') {
@@ -1142,6 +1555,15 @@ function convert() {
   for (let i = 0; i < TARGET_W * TARGET_H; i++)
     buf[i] = lum(px[i*4], px[i*4+1], px[i*4+2]);
 
+  // Black/white point tone mapping
+  if (blackPoint > 0 || whitePoint < 255) {
+    const range = whitePoint - blackPoint;
+    if (range > 0) {
+      for (let i = 0; i < TARGET_W * TARGET_H; i++)
+        buf[i] = Math.max(0, Math.min(255, (buf[i] - blackPoint) / range * 255));
+    }
+  }
+
   // Contrast adjustment in sRGB space — pivot at midpoint 127.5
   if (contrastValue !== 0) {
     const factor = contrastValue >= 0 ? 1 + contrastValue * 2 / 100 : 1 + contrastValue / 100;
@@ -1154,6 +1576,12 @@ function convert() {
     for (let i = 0; i < TARGET_W * TARGET_H; i++)
       buf[i] = 255 - buf[i];
   }
+
+  // Build histogram from fully-processed buf[] (after tone map + contrast + invert)
+  lastHistogram = new Float32Array(256);
+  for (let i = 0; i < TARGET_W * TARGET_H; i++)
+    lastHistogram[Math.min(255, Math.max(0, Math.round(buf[i])))]++;
+  drawHistogram();
 
   const q = new Uint8Array(TARGET_W * TARGET_H);
 
@@ -1469,6 +1897,17 @@ document.getElementById('settingsBtn').addEventListener('click', () => modalBack
 document.getElementById('modalClose').addEventListener('click', () => modalBackdrop.classList.remove('open'));
 modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) modalBackdrop.classList.remove('open'); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') modalBackdrop.classList.remove('open'); });
+
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) { e.preventDefault(); loadFile(file); return; }
+    }
+  }
+});
 </script>
 </body>
 </html>
