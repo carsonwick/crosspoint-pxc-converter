@@ -77,10 +77,20 @@ Controls are arranged in processing order:
 
 | Control | Description |
 |---------|-------------|
-| **Tone Range** | Black point and white point sliders remap the input luminance range. **Auto** button sets them automatically via histogram percentile clipping. |
+| **Tone Range** | Black point, white point, and gamma sliders. **Auto** sets black/white points via histogram percentile clipping and resets gamma to 1.0. **Reset all** restores all three to defaults. |
 | **Contrast** | ±100 linear contrast adjustment, pivot at midpoint. |
 | **Invert** | Invert luminance before dithering. |
 | **Dither** | Toggle + algorithm selector (see below). |
+
+**Tone Range — Gamma**
+
+The gamma slider (0.30–3.00, default 1.00) remaps luminance non-linearly using `Vout = Vin^(1/γ)`:
+
+- **γ > 1** — lifts shadows disproportionately (brighter image, more shadow detail)
+- **γ < 1** — compresses shadows, pushes midtones toward highlights (darker image)
+- **γ = 1** — no change
+
+Gamma is applied after black/white point mapping and before contrast, so you can first set your tonal range with the black/white sliders, then use gamma to redistribute tones within that range.
 
 ### Dithering (image mode)
 All error-diffusion algorithms use BT.601 luminance in sRGB space and quantise against sRGB palette values `[0, 85, 170, 255]`, matching ImageMagick's `-colorspace Gray` pipeline.
