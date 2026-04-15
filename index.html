@@ -1010,7 +1010,7 @@ const DEVICES = {
 const DEFAULT_XT = 'x4';
 let targetW = DEVICES[DEFAULT_XT].w;
 let targetH = DEVICES[DEFAULT_XT].h;
-let numPixels = targetW * targetH;
+let totalPixels = targetW * targetH;
 
 const MAX_EDITOR_W = 340;
 const MAX_EDITOR_H = 520;
@@ -1377,7 +1377,7 @@ document.querySelectorAll('[data-xt]').forEach(btn => {
     btn.classList.add('active');
     const device = DEVICES[xt];
     targetW = device.w; targetH = device.h;
-    numPixels = targetW * targetH;
+    totalPixels = targetW * targetH;
     workCanvas.width  = targetW;
     workCanvas.height = targetH;
     previewCanvas.width  = targetW;
@@ -1701,11 +1701,11 @@ function resizeHistogramCanvas() {
   const w = histogramCanvas.offsetWidth;
   if (!w) return;
   const dpr = window.devicePixelRatio || 1;
-  const targetW = Math.round(w * dpr);
-  const targetH = Math.round(80 * dpr);
-  if (histogramCanvas.width === targetW && histogramCanvas.height === targetH) return;
-  histogramCanvas.width  = targetW;
-  histogramCanvas.height = targetH;
+  const histCanvasW = Math.round(w * dpr);
+  const histCanvasH = Math.round(80 * dpr);
+  if (histogramCanvas.width === histCanvasW && histogramCanvas.height === histCanvasH) return;
+  histogramCanvas.width  = histCanvasW;
+  histogramCanvas.height = histCanvasH;
 }
 
 function drawHistogram() {
@@ -1791,7 +1791,7 @@ function drawHistogram() {
   hc.textBaseline = 'top';
   hc.textAlign = 'left';
   hc.fillStyle = 'rgba(255,255,255,0.8)';
-  hc.fillText('max ' + (100*(binnedMax/numPixels)).toFixed(1) + '%', 4, 4);
+  hc.fillText('max ' + (100*(binnedMax/totalPixels)).toFixed(1) + '%', 4, 4);
 
   // Percentage labels — centered in each zone
   hc.font = `${Math.round(9 * dpr)}px monospace`;
