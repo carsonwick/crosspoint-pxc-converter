@@ -1790,8 +1790,8 @@ function drawHistogram() {
   hc.font = `${Math.round(9 * dpr)}px monospace`;
   hc.textBaseline = 'top';
   hc.textAlign = 'left';
-  hc.fillStyle = 'rgba(255,255,255,0.8)';
-  hc.fillText('max ' + (100*(binnedMax/totalPixels)).toFixed(1) + '%', 4, 4);
+  hc.fillStyle = 'rgba(185,185,195,0.9)';
+  hc.fillText('peak bin ' + Math.round(100 * binnedMax / totalPixels) + ' %', 4, 4);
 
   // Percentage labels — centered in each zone
   hc.font = `${Math.round(9 * dpr)}px monospace`;
